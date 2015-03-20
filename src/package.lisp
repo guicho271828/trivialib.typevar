@@ -71,7 +71,7 @@
                                           (mapcar #'cons typevars typevals)
                                           :initial-value type)))
                                (c2mop:class-direct-slots class))))
-       (format t "~&; Instantiating polymorphic class ~a" //-name)
+       (format t "~&; Instantiating a grounded standard structure ~a" //-name)
        (prog1
          (make-instance 'structure-class
             :name //-name
