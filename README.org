@@ -33,13 +33,6 @@
 (kons2 0 0.0)
 ; Evaluation aborted on #<TRIVIALIB.TYPEVAR:TYPE-UNIFICATION-ERROR {10074C1B23}>.
 
-(kons2 0.0 0)
-; Evaluation aborted on #<TRIVIALIB.TYPEVAR:TYPE-UNIFICATION-ERROR {1007672DB3}>.
-
-(kons2 0.0 0.0)
-; Instantiating a grounded standard structure KONS2/SINGLE-FLOAT
-#S(KONS2/SINGLE-FLOAT :KAR 0.0 :KDR 0.0)
-
 #+END_SRC
 
 TODO: integration with FTYPE interface
