@@ -19,27 +19,7 @@
 ;; run test with (run! test-name) 
 ;;   test as you like ...
 
-(test trivialib.typevar
-  (finishes
-    (defclass kons ()
-         ((kar :type a)
-          (kdr :type b))
-      (:metaclass polymorphic-class)
-      (:typevars a b)))
-  (finishes
-    (defparameter *kons/fixnum*
-                  (make-instance 'kons
-                     :typevals '(fixnum fixnum)
-                     :initforms '(0 0))))
-  (finishes
-    (defparameter *instance* (make-instance *kons/fixnum*)))
-  (finishes
-    (defparameter *instance2* (make-instance *kons/fixnum* :kar 1)))
 
-  (finishes
-   ;; automatically instantiate kons/single-float/single-float
-   ;; it has compiler-macro
-   (defparameter *instance3* (kons 1.0 0.0))))
 
 (test type-unify1
   (is (equal '((a . fixnum))
@@ -103,3 +83,26 @@
   (is (equal '((a . fixnum) (b . float)) (type-unify '(a b) '(a b) '(fixnum float)))))
 
 
+(test trivialib.typevar
+  (finishes
+    (defclass kons ()
+         ((kar :type a)
+          (kdr :type b))
+      (:metaclass polymorphic-class)
+      (:typevars a b)))
+  (finishes
+    (defparameter *kons/fixnum*
+                  (make-instance 'kons
+                     :typevals '(fixnum fixnum)
+                     :initforms '(0 0))))
+  (finishes
+    (defparameter *instance* (make-instance *kons/fixnum*)))
+  (finishes
+    (defparameter *instance2* (make-instance *kons/fixnum* :kar 1)))
+
+  (finishes
+   ;; automatically instantiate kons/single-float/single-float
+   ;; it has compiler-macro
+   (defparameter *instance3* (kons 1.0 0.0)))
+  (kons 2 3)
+  (kons 2 5.0))
