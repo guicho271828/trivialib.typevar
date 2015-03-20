@@ -270,18 +270,14 @@
 
 ;;; default-initform
 
-(defgeneric default-initform (x))
-(defmethod default-initform ((x number))
-  (coerce 0 (class-of x)))
-(defmethod default-initform ((x ratio))
-  ;; 1/1 is not a ratio. its devisor should be > 1.
-  ;; however we stick to zero.
-  0)
-(defmethod default-initform ((x sequence))
-  (coerce nil (class-of x)))
-(defmethod default-initform ((x standard-object))
-  (make-instance (type-of x)))
-(defmethod default-initform ((x structure-object))
-  (make-instance (type-of x)))
+(defun default-initform (x)
+  (default-initform/type (type-of x)))
 
+(defun default-initform/type (type)
+  (cond
+    ((subtypep type 'sequence) (coerce nil type))
+    ((subtypep type 'ratio) 0)
+    ((subtypep type 'number) (coerce 0 type))
+    ((subtypep type 'standard-object) (make-instance type))
+    ((subtypep type 'structure-object) (make-instance type))))
 
