@@ -11,11 +11,7 @@
    #:polymorphic-class
    #:polymorphic-class-hash
    #:polymorphic-class-typevars
-   #:ensure-polymorphic-class-instance
    #:type-unify
-   #:make-constructor-form
-   #:define-constructor
-   #:default-initform
    #:type-unify1
    #:type-unification-error))
 (in-package :trivialib.typevar)
