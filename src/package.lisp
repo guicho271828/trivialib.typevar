@@ -156,9 +156,10 @@
                          (cons (make-keyword name) name))
                        names))))
        (deftype ,(symbolicate name '/) ,typevars
-         (make-instance ',name
-            :typevals (list ,@typevars)
-            :initforms (mapcar #'default-initform/type (list ,@typevars)))))))
+         (class-name
+          (make-instance ',name
+             :typevals (list ,@typevars)
+             :initforms (mapcar #'default-initform/type (list ,@typevars))))))))
 
 ;;; type unification
 ;; 1. Any type variable unifies with any type expression, and is

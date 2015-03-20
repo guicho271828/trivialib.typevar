@@ -83,7 +83,7 @@
   (is (equal '((a . fixnum) (b . float)) (type-unify '(a b) '(a b) '(fixnum float)))))
 
 
-(test trivialib.typevar
+(test kons
   (finishes
     (defclass kons ()
          ((kar :type a)
@@ -106,3 +106,32 @@
    (defparameter *instance3* (kons 1.0 0.0)))
   (kons 2 3)
   (kons 2 5.0))
+
+(test kons2
+  (finishes
+    (defclass kons2 ()
+         ((kar :type a)
+          (kdr :type a))
+      (:metaclass polymorphic-class)
+      (:typevars a)))
+
+  (finishes
+    (kons2 0 0))
+
+  
+  (signals type-unification-error
+    (kons2 0 0.0)))
+
+ 
+
+(test deftype
+  (finishes
+    (proclaim '(ftype (function ((kons/ fixnum fixnum) (kons/ fixnum fixnum)) (kons/ fixnum fixnum)) add-kons)))
+  (finishes
+    (defun add-kons (kons1 kons2)
+      (match* (kons1 kons2)
+        (((kons/fixnum/fixnum :kar a :kdr b)
+          (kons/fixnum/fixnum :kar c :kdr d))
+         (kons (+ a c) (+ b d))))))
+
+  (is-true (typep (add-kons (kons 3 5) (kons 5 10)) 'kons/fixnum/fixnum)))
