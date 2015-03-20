@@ -129,11 +129,16 @@
               (find-direct-slots slot/keyword c))
             (c2mop:class-direct-superclasses c))))
 
+
+(defmethod initialize-instance :after ((class polymorphic-class) &key &allow-other-keys)
+  (eval (make-finalize-form class)))
 (defmethod c2mop:finalize-inheritance :after ((class polymorphic-class))
   (eval (make-constructor-form class)))
 
-(defmacro define-constructor (polymorphic-class)
-  (make-constructor-form (find-class polymorphic-class)))
+(defun make-finalize-form (class)
+  `(defun ,(class-name class) (&rest args)
+     (c2mop:finalize-inheritance ,class)
+     (apply #',(class-name class) args)))
 
 (defun make-constructor-form (class)
   (let* ((slotds (c2mop:class-slots class))
