@@ -32,8 +32,7 @@
               :initform (make-hash-table :test #'equal)
               :reader polymorphic-class-hash))))
 
-(defmethod c2mop:validate-superclass
-    ((class polymorphic-class) (super standard-class))
+(defmethod c2mop:validate-superclass ((class polymorphic-class) (super standard-class))
   t)
 
 (defun specialized-structure-name (name typevals)
@@ -121,7 +120,7 @@
               (find-direct-slots slot/keyword c))
             (c2mop:class-direct-superclasses c))))
 
-(defmethod make-instance :after ((class polymorphic-class) &key &allow-other-keys)
+(defmethod c2mop:finalize-inheritance :after ((class polymorphic-class))
   (eval (make-constructor-form class)))
 
 (defmacro define-constructor (polymorphic-class)
