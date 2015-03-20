@@ -14,13 +14,30 @@
 ; Instantiating a grounded standard structure KONS/FIXNUM/FIXNUM
 #S(KONS/FIXNUM/FIXNUM :KAR 2 :KDR 3)
 
-(kons 0 1)
-; Instantiating a grounded standard structure KONS/FIXNUM/FIXNUM
-#S(KONS/BIT/BIT :KAR 0 :KDR 1)
-
 (kons 0.0 1)
-; Instantiating a grounded standard structure KONS/FIXNUM/FIXNUM
+; Instantiating a grounded standard structure KONS/SINGLE-FLOAT/BIT
 #S(KONS/SINGLE-FLOAT/BIT :KAR 0.0 :KDR 1)
+
+(defclass kons2 ()
+  ((kar :type a)
+   (kdr :type a))
+  (:metaclass polymorphic-class)
+  (:typevars a))
+#<POLYMORPHIC-CLASS KONS2>
+TEST> (kons2 0 0)
+STYLE-WARNING: redefining TRIVIALIB.TYPEVAR.TEST::KONS2 in DEFUN
+; Instantiating a grounded standard structure KONS2/BIT
+#S(KONS2/BIT :KAR 0 :KDR 0)
+
+(kons2 0 0.0)
+; Evaluation aborted on #<TRIVIALIB.TYPEVAR:TYPE-UNIFICATION-ERROR {10074C1B23}>.
+
+(kons2 0.0 0)
+; Evaluation aborted on #<TRIVIALIB.TYPEVAR:TYPE-UNIFICATION-ERROR {1007672DB3}>.
+
+(kons2 0.0 0.0)
+; Instantiating a grounded standard structure KONS2/SINGLE-FLOAT
+#S(KONS2/SINGLE-FLOAT :KAR 0.0 :KDR 0.0)
 
 #+END_SRC
 
