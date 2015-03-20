@@ -38,16 +38,24 @@
 (defun specialized-structure-name (name typevals)
   (intern (format nil "~a~{/~a~}" name typevals)))
 
+(defun wrap-fixnum (type)
+  (match type
+    ;; since SBCL broke this
+    ((list 'integer 0 MOST-POSITIVE-FIXNUM)
+     'fixnum)
+    (type type)))
+
 (defmethod make-instance :around ((class polymorphic-class)
                                   &key typevals &allow-other-keys)
-  (ematch class
-    ((polymorphic-class typevars hash)
-     (assert (= (length typevars)
-                (length typevals))
-             nil "length differs between ~a and ~a" typevars typevals)
-     (or (gethash typevals hash)
-         (setf (gethash typevals hash)
-               (call-next-method))))))
+  (let ((typevals (mapcar #'wrap-fixnum typevals)))
+    (ematch class
+      ((polymorphic-class typevars hash)
+       (assert (= (length typevars)
+                  (length typevals))
+               nil "length differs between ~a and ~a" typevars typevals)
+       (or (gethash typevals hash)
+           (setf (gethash typevals hash)
+                 (call-next-method)))))))
 
 (defmethod make-instance ((class polymorphic-class)
                           &key typevals initforms &allow-other-keys)
@@ -78,6 +86,7 @@
                              :initfunction nil)))
                     (c2mop:class-direct-slots class)
                     real-types initforms))
+         ;; accessors
          (mapc (lambda-ematch*
                  (((c2mop:slot-definition name) type)
                   (let ((accessor-name (symbolicate //-name '- name)))
@@ -136,7 +145,7 @@
                                           (type-unify
                                            ',(polymorphic-class-typevars class)
                                            ',types
-                                           (list ,@(mapcar (lambda (x) `(type-of ,x)) names))))
+                                           (list ,@(mapcar (lambda (x) `(wrap-fixnum (type-of ,x))) names))))
                         :initforms (list ,@(mapcar (lambda (x) `(default-initform ,x)) names)))
                      ,@(alist-plist
                         (mapcar (lambda (name)
