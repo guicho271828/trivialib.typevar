@@ -53,8 +53,7 @@
            (setf (gethash typevals hash)
                  (call-next-method)))))))
 
-(defmethod make-instance ((class polymorphic-class)
-                          &key typevals initforms &allow-other-keys)
+(defmethod make-instance ((class polymorphic-class) &key typevals initforms &allow-other-keys)
   (ematch class
     ((polymorphic-class typevars)
      (let ((//-name (specialized-structure-name (class-name class) typevals))
