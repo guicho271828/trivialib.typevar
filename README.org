@@ -42,7 +42,7 @@
 
 #+END_SRC
 
-TODO: integrating with FTYPE interface
+TODO: integration with FTYPE interface
 
 ** Dependencies
 
