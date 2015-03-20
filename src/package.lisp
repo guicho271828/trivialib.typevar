@@ -13,7 +13,8 @@
    #:polymorphic-class-typevars
    #:type-unify
    #:type-unify1
-   #:type-unification-error))
+   #:type-unification-error
+   #:make-constructor-form))
 (in-package :trivialib.typevar)
 
 ;;; class definition
@@ -136,22 +137,28 @@
      (apply #',(class-name class) args)))
 
 (defun make-constructor-form (class)
-  (let* ((slotds (c2mop:class-slots class))
+  (let* ((name (class-name class))
+         (slotds (c2mop:class-slots class))
          (names (mapcar #'c2mop:slot-definition-name slotds))
-         (types (mapcar #'c2mop:slot-definition-type slotds)))
-    `(defun ,(class-name class) (&optional ,@names)
-       (make-instance (make-instance ',(class-name class) 
-                        :typevals (mapcar #'cdr
-                                          (type-unify
-                                           ',(polymorphic-class-typevars class)
-                                           ',types
-                                           (list ,@(mapcar (lambda (x) `(wrap-fixnum (type-of ,x))) names))))
-                        :initforms (list ,@(mapcar (lambda (x) `(default-initform ,x)) names)))
-                     ,@(alist-plist
-                        (mapcar (lambda (name)
-                                  (cons (make-keyword name) name))
-                                names))))))
-
+         (types (mapcar #'c2mop:slot-definition-type slotds))
+         (typevars (polymorphic-class-typevars class)))
+    `(progn
+       (defun ,name (&optional ,@names)
+         (make-instance (make-instance ',name
+                           :typevals (mapcar #'cdr
+                                             (type-unify
+                                              ',typevars
+                                              ',types
+                                              (list ,@(mapcar (lambda (x) `(wrap-fixnum (type-of ,x))) names))))
+                           :initforms (list ,@(mapcar (lambda (x) `(default-initform ,x)) names)))
+            ,@(alist-plist
+               (mapcar (lambda (name)
+                         (cons (make-keyword name) name))
+                       names))))
+       (deftype ,(symbolicate name '/) ,typevars
+         (make-instance ',name
+            :typevals (list ,@typevars)
+            :initforms (mapcar #'default-initform/type (list ,@typevars)))))))
 
 ;;; type unification
 ;; 1. Any type variable unifies with any type expression, and is
@@ -280,4 +287,4 @@
     ((subtypep type 'number) (coerce 0 type))
     ((subtypep type 'standard-object) (make-instance type))
     ((subtypep type 'structure-object) (make-instance type))))
-
+    
