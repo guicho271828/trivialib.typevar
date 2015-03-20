@@ -3,6 +3,29 @@
 
 ** Usage
 
+#+BEGIN_SRC lisp
+(defclass kons ()
+  ((kar :type a)
+   (kdr :type b))
+  (:metaclass polymorphic-class)
+  (:typevars a b))
+
+(kons 2 3)
+; Instantiating a grounded standard structure KONS/FIXNUM/FIXNUM
+#S(KONS/FIXNUM/FIXNUM :KAR 2 :KDR 3)
+
+(kons 0 1)
+; Instantiating a grounded standard structure KONS/FIXNUM/FIXNUM
+#S(KONS/BIT/BIT :KAR 0 :KDR 1)
+
+(kons 0.0 1)
+; Instantiating a grounded standard structure KONS/FIXNUM/FIXNUM
+#S(KONS/SINGLE-FLOAT/BIT :KAR 0.0 :KDR 1)
+
+#+END_SRC
+
+TODO: integrating with FTYPE interface
+
 ** Dependencies
 
 This library is at least tested on implementation listed below:
