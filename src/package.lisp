@@ -5,7 +5,7 @@
 
 (in-package :cl-user)
 (defpackage trivialib.typevar
-  (:use :cl :alexandria :trivia :trivia.fail)
+  (:use :cl :alexandria :trivia :trivia.fail :aspectm)
   (:export
    #:polymorphic-object
    #:polymorphic-class

@@ -20,8 +20,9 @@
   :author "Masataro Asai"
   :mailto "guicho2.71828@gmail.com"
   :license "LLGPL"
-  :depends-on (:alexandria :trivia :immutable-struct :closer-mop
-                           :lisp-namespace)
+  :depends-on (:alexandria :trivia :closer-mop
+                           :lisp-namespace
+                           :aspectm)
   :components ((:module "src"
                 :components
                 ((:file "package"))))
