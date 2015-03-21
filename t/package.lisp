@@ -122,8 +122,6 @@
   (signals type-unification-error
     (kons2 0 0.0)))
 
- 
-
 (test deftype
   (finishes
     (proclaim '(ftype (function ((kons/ fixnum fixnum) (kons/ fixnum fixnum)) (kons/ fixnum fixnum)) add-kons)))
@@ -135,3 +133,25 @@
          (kons (+ a c) (+ b d))))))
 
   (is-true (typep (add-kons (kons 3 5) (kons 5 10)) 'kons/fixnum/fixnum)))
+
+
+(test ftype-with-typevar
+  (finishes
+    (gtype kdr-if a (kons/ a b) b))
+  (finishes
+    (defun kdr-if (a kons)
+      (match* (kons1 kons2)
+        (((kons/fixnum/fixnum :kar a :kdr b)
+          (kons/fixnum/fixnum :kar c :kdr d))
+         (kons (+ a c) (+ b d))))))
+
+  (is-true (typep (add-kons (kons 3 5) (kons 5 10)) 'kons/fixnum/fixnum)))
+
+(test gtype
+  (finishes
+    (gtype kdr-if a (kons/ a b) b)
+    (defun kdr-if (x kons)
+      (ematch kons
+        ((kons (eq x) y)
+         y)))))
+

@@ -14,7 +14,8 @@
    #:type-unify
    #:type-unify1
    #:type-unification-error
-   #:make-constructor-form))
+   #:make-constructor-form
+   #:gtype))
 (in-package :trivialib.typevar)
 
 ;;; class definition
@@ -289,3 +290,27 @@
     ((subtypep type 'standard-object) (make-instance type))
     ((subtypep type 'structure-object) (make-instance type))))
     
+;;; gtype
+
+(defstruct gtype-info
+  types
+  lambda-expression)
+
+(lispn:define-namespace gtype-info gtype-info)
+
+;; thanks, myrkraverk #lisp !
+(defmacro gtype (fname &rest types)
+  `(progn
+     (define-standard-hook (defun ,(symbolicate 'gtype- fname) :before) (name args &body body)
+       (when (eq name ',fname)
+         (setf (symbol-gtype-info ',fname)
+               (make-gtype-info
+                :types ',types
+                :lambda-expression `(lambda ,args ,@body))))
+         nil)
+     (define-standard-hook (defun ,(symbolicate 'gtype- fname) :after) (name args &body body)
+       ;; 
+       )))
+
+
+
