@@ -24,14 +24,29 @@
 
   (is (set-equal '(1 "aa")
                  (trivialib.typevar::remove-larger
-                  '(1 5 "aa" :b 2 "c" 3 4)
+                  '(2 5 "aa" 1 "c" 3 4)
                   (lambda (a b)
-                    (match* (a b)
+                    (format t "~%~A ~A" a b)
+                    (ematch* (a b)
                       (((integer) (integer))
-                       (< a b))
-                      (((string) (string))
-                       (string< a b))
-                      (_ (values nil t))))))))
+                       (print (< a b)))
+                      (((type string) (type string))
+                       (print (string< a b)))
+                      (_ (print :indifferent)
+                         (values nil t)))))))
+
+  (is (set-equal '(5 "c")
+                 (trivialib.typevar::remove-smaller
+                  '(2 5 "aa" 1 "c" 3 4)
+                  (lambda (a b)
+                    (format t "~%~A ~A" a b)
+                    (ematch* (a b)
+                      (((integer) (integer))
+                       (print (< a b)))
+                      (((type string) (type string))
+                       (print (string< a b)))
+                      (_ (print :indifferent)
+                         (values nil t))))))))
 
 (test trivialib.typevar::merge-mappings-as-or
   (is (equal '((a . fixnum) (b . fixnum))
@@ -45,7 +60,7 @@
   (is (equal '((a . integer))
              (trivialib.typevar::merge-mappings-as-or
               '((a . fixnum)) '((a . integer)))))
-  (is (equal '((a . (or integer character)))
+  (is (equal '((a . (or fixnum character)))
              (trivialib.typevar::merge-mappings-as-or
               '((a . fixnum)) '((a . character))))))
 

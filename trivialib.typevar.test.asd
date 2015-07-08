@@ -18,4 +18,5 @@
   :components ((:module "t"
                 :components
                 ((:file "package"))))
-  :perform (load-op :after (op c) (eval (read-from-string "(5am:run! :trivialib.typevar)"))))
+  :in-order-to ((test-op (load-op trivialib.typevar.test)))
+  :perform (test-op :after (op c) (eval (read-from-string "(5am:run! :trivialib.typevar)"))))

@@ -27,4 +27,4 @@
                 :components
                 ((:file "package"))))
   :description ""
-  :in-order-to ((test-op (load-op trivialib.typevar.test))))
+  :in-order-to ((test-op (test-op trivialib.typevar.test))))

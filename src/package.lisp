@@ -267,13 +267,28 @@ unify-p is a boolean indicating if the given template unifies against the given 
 (defun remove-larger (sequence partial-order<)
   (let (acc)
     (map nil (lambda (a)
-               (let (flag)
+               (let ((flag t))
                  (setf acc (delete-if (lambda (b)
-                                        (multiple-value-match (funcall partial-order< a b)
-                                          ((t _) (setf flag t) t)
-                                          ((nil nil) nil)
+                                        (multiple-value-ematch (funcall partial-order< a b)
                                           ;; indifferent
-                                          ((_ t) (setf flag t) t)))
+                                          ((_ t) nil)
+                                          ((nil nil) (setf flag nil) nil)
+                                          ((_ nil) t)))
+                                      acc))
+                 (when flag (push a acc))))
+         sequence)
+    acc))
+
+(defun remove-smaller (sequence partial-order<)
+  (let (acc)
+    (map nil (lambda (a)
+               (let ((flag t))
+                 (setf acc (delete-if (lambda (b)
+                                        (multiple-value-ematch (funcall partial-order< b a)
+                                          ;; indifferent
+                                          ((_ t) nil)
+                                          ((nil nil) (setf flag nil) nil)
+                                          ((_ nil) t)))
                                       acc))
                  (when flag (push a acc))))
          sequence)
@@ -289,9 +304,16 @@ unify-p is a boolean indicating if the given template unifies against the given 
           ;; note: the one occurring earlier in sequence is discarded
           ;; file:///usr/share/doc/hyperspec/Body/f_rm_dup.htm
           ;; The order of the elements remaining in the result is the same as the order in which they appear in sequence. 
-          for %typevals = (remove-larger typevals (lambda (a b) (subtypep a b)))
-          when %typevals
-          collect (cons typevar `(or ,@%typevals)))))
+          for %typevals = (remove-smaller typevals (lambda (a b)
+                                                     (multiple-value-match (and (subtypep a b)
+                                                                                (subtypep b a))
+                                                       ((t t) t)
+                                                       ((nil t) (values nil t))
+                                                       ((_ nil) (values nil t)))))
+          if (= (length %typevals) 1)
+            collect (cons typevar (car %typevals))
+          else
+            collect (cons typevar `(or ,@%typevals)))))
 
 (defun merge-mappings-as-and (mapping1 mapping2)
   (let (plist)
@@ -300,12 +322,15 @@ unify-p is a boolean indicating if the given template unifies against the given 
     (dolist (pair mapping2)
       (pushnew (cdr pair) (getf plist (car pair)) :test #'equal))
     (values (loop for (typevar typevals) on plist by #'cddr
-                  for %typevals = (remove-larger typevals (lambda (a b) (subtypep b a)))
-                  when %typevals
+                  for %typevals = (remove-larger typevals (lambda (a b)
+                                                            (if (subtypep a b)
+                                                                t (values nil t))))
                   if (subtypep `(and ,@typevals) nil) ;; (and ,@typevals) == nil
                     do (return-from merge-mappings-as-and)
                   else
-                    collect (cons typevar `(and ,@typevals)))
+                    collect (cons typevar (if (= (length %typevals) 1)
+                                              (car %typevals)
+                                              `(and ,@%typevals))))
             t)))
 
 (defun type-unify1-compound (typevars template type)
