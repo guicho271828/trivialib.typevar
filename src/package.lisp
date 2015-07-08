@@ -176,6 +176,13 @@
 (define-condition type-unification-error (program-error) ())
 
 (defun type-unify (typevars templates types)
+  "Unify the type templates against types.
+TYPES is a list of type specifiers.
+TYPEVARS is a list of symbols.
+TEMPLATES is a list of type specifiers, but may contain the elements of TYPEVARS somewhere in the tree.
+
+Returns (values result unify-p), where the result is an alist and
+unify-p is a boolean indicating if the given template unifies against the given types."
   (ematch* (templates types)
     ((nil nil)
      nil)
