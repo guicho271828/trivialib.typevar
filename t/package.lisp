@@ -19,7 +19,50 @@
 ;; run test with (run! test-name) 
 ;;   test as you like ...
 
+(test trivialib.typevar::remove-larger
+  (is (equal '(1) (trivialib.typevar::remove-larger '(1 5 2 3 4) #'<)))
 
+  (is (set-equal '(1 "aa")
+                 (trivialib.typevar::remove-larger
+                  '(1 5 "aa" :b 2 "c" 3 4)
+                  (lambda (a b)
+                    (match* (a b)
+                      (((integer) (integer))
+                       (< a b))
+                      (((string) (string))
+                       (string< a b))
+                      (_ (values nil t))))))))
+
+(test trivialib.typevar::merge-mappings-as-or
+  (is (equal '((a . fixnum) (b . fixnum))
+             (trivialib.typevar::merge-mappings-as-or
+              '((a . fixnum)) '((b . fixnum)))))
+
+  (is (equal '((a . fixnum))
+             (trivialib.typevar::merge-mappings-as-or
+              '((a . fixnum)) '((a . fixnum)))))
+  
+  (is (equal '((a . integer))
+             (trivialib.typevar::merge-mappings-as-or
+              '((a . fixnum)) '((a . integer)))))
+  (is (equal '((a . (or integer character)))
+             (trivialib.typevar::merge-mappings-as-or
+              '((a . fixnum)) '((a . character))))))
+
+(test trivialib.typevar::merge-mappings-as-and
+  (is (equal '((a . fixnum) (b . fixnum))
+             (trivialib.typevar::merge-mappings-as-and
+              '((a . fixnum)) '((b . fixnum)))))
+
+  (is (equal '((a . fixnum))
+             (trivialib.typevar::merge-mappings-as-and
+              '((a . fixnum)) '((a . fixnum)))))
+  
+  (is (equal '((a . fixnum))
+             (trivialib.typevar::merge-mappings-as-and
+              '((a . fixnum)) '((a . integer)))))
+  (is-false (trivialib.typevar::merge-mappings-as-and
+             '((a . fixnum)) '((a . character)))))
 
 (test type-unify1
   (is (equal '((a . fixnum))
@@ -47,11 +90,11 @@
                          'simple-string)))
 
   
-  (signals error
-    (equal '((a . string))
-           (type-unify1 '(a)
-                       '(and simple-array a)
-                       'simple-string)))
+
+  (is (equal '((a . simple-string))
+             (type-unify1 '(a)
+                          '(and simple-array a)
+                          'simple-string)))
   
   (is (equal '((a . char))
              (type-unify1 '(a)
@@ -152,6 +195,10 @@
     (gtype kdr-if a (kons/ a b) b)
     (defun kdr-if (x kons)
       (ematch kons
-        ((kons (eq x) y)
-         y)))))
+        ((kons (kar (eq x)) (kdr y))
+         y)))
+
+    ;; 
+
+    ))
 

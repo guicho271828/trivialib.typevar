@@ -179,45 +179,49 @@
   "Unify the type templates against types.
 TYPES is a list of type specifiers.
 TYPEVARS is a list of symbols.
-TEMPLATES is a list of type specifiers, but may contain the elements of TYPEVARS somewhere in the tree.
+TEMPLATES is a list of type specifiers, but may also contain
+the elements of TYPEVARS somewhere in the tree.
 
-Returns (values result unify-p), where the result is an alist and
+TYPE-UNIFY assumes that the unification is the conjunction of each pair of a template and a type.
+If some pair fails to unify, then the whole pairs fail to unify.
+Also, if some unification (assignment to type variable) in a given pair
+contradicts the other assignment, then the whole pairs fail to unify.
+
+Returns (values result unify-p), where the result is an alist containing the assignment of unification and
 unify-p is a boolean indicating if the given template unifies against the given types."
   (ematch* (templates types)
     ((nil nil)
      nil)
     (((list* tmpl tmpl*) (list* type type*))
      (multiple-value-match (type-unify1 typevars tmpl type)
-       ((nil nil)
-        (error 'type-unification-error))
-       ((results t)
-        (labels ((rec (results typevars tmpl*)
-                   (ematch results
-                     (nil (values typevars tmpl*))
-                     ((list* (cons var val) results)
-                      (rec results
-                           (remove var typevars)
-                           (subst val var tmpl*))))))
-          (multiple-value-match (rec results typevars tmpl*)
-            ((typevars tmpl*)
-             (append results
-                     (type-unify typevars tmpl* type*))))))))))
+       ((mapping t)
+        (multiple-value-match (type-unify typevars tmpl* type*)
+          ((mapping* t)
+           (merge-mappings-as-and mapping mapping*))))))
+    ((_ _)
+     (error "Invalid Arguments! ~%~a~%~a" templates types))))
 
 (defun type-unify1 (typevars template type)
+  "Unify the type template against a type.
+TYPE is a type specifiers.
+TYPEVARS is a list of symbols.
+TEMPLATE is a type specifiers, but may contain the elements of TYPEVARS somewhere in the tree.
+
+Returns (values result unify-p), where the result is an alist containing the assignment of unification and
+unify-p is a boolean indicating if the given template unifies against the given types."
   (if (atom type)
       (type-unify1-atomic typevars template type)
       (type-unify1-compound typevars template type)))
 
 (defun type-unify1-atomic (typevars template type)
   (ematch template
-    ((and (symbol)
-          (guard typevar (member typevar typevars)))
+    ((guard typevar (member typevar typevars))
      ;; template is an atomic typevar
      (values (list (cons typevar type)) t))
     ('* (warn "Avoid using * in type specification, it matches everything!")
         (values nil t))
     ((symbol)
-     ;; template is a standard atomic type
+     ;; template is a standard atomic type, and not a typevar
      (if (subtypep type template)
          (values nil t)
          nil))
@@ -227,14 +231,82 @@ unify-p is a boolean indicating if the given template unifies against the given 
        ((eq template) (values nil t))
        ('* (values nil t))
        (_ nil)))
-    ;; compound types
-    ((list* 'or rest)
-     (dolist (tmp rest)
-       (multiple-value-match
-           (type-unify1 typevars tmp type)
-         ((mapping t) (return-from type-unify1-atomic (values mapping t))))))
-    ((list* (and typespec (or 'and 'eql 'member)) _)
-     (error "~a is not supported in typevar!" typespec))))
+    ;; compound types in file:///usr/share/doc/hyperspec/Body/04_bc.htm
+    ((list* (or 'eql 'member 'satisfies) args)
+     (when (intersection args typevars)
+       (error "Type specifier ~a should not contain a type variable! ~% ~a" args template))
+     (if (subtypep type template)
+         (values nil t)
+         nil))
+    ((list* 'or templates)
+     (let ((some nil))
+       (values (reduce (lambda (mapping template)
+                         (multiple-value-match (type-unify1 typevars template type)
+                           ((mapping2 t)
+                            (setf some t)
+                            (merge-mappings-as-or mapping mapping2))
+                           ((_ nil)
+                            mapping)))
+                       templates :initial-value nil)
+               some)))
+    ((list* 'and templates)
+     (values (reduce (lambda (mapping template)
+                       (multiple-value-match (type-unify1 typevars template type)
+                         ((mapping2 t)
+                          (multiple-value-match (merge-mappings-as-and mapping mapping2)
+                            ((mapping3 t) mapping3)
+                            ((_ nil)
+                             (return-from type-unify1-atomic))))
+                         ((_ nil)
+                          (return-from type-unify1-atomic))))
+                     templates :initial-value nil)
+             t))
+    ((list* typespec _)
+     (error "~a is not supported" typespec))))
+
+(defun remove-larger (sequence partial-order<)
+  (let (acc)
+    (map nil (lambda (a)
+               (let (flag)
+                 (setf acc (delete-if (lambda (b)
+                                        (multiple-value-match (funcall partial-order< a b)
+                                          ((t _) (setf flag t) t)
+                                          ((nil nil) nil)
+                                          ;; indifferent
+                                          ((_ t) (setf flag t) t)))
+                                      acc))
+                 (when flag (push a acc))))
+         sequence)
+    acc))
+
+(defun merge-mappings-as-or (mapping1 mapping2)
+  (let (plist)
+    (dolist (pair mapping1)
+      (pushnew (cdr pair) (getf plist (car pair)) :test #'equal))
+    (dolist (pair mapping2)
+      (pushnew (cdr pair) (getf plist (car pair)) :test #'equal))
+    (loop for (typevar typevals) on plist by #'cddr
+          ;; note: the one occurring earlier in sequence is discarded
+          ;; file:///usr/share/doc/hyperspec/Body/f_rm_dup.htm
+          ;; The order of the elements remaining in the result is the same as the order in which they appear in sequence. 
+          for %typevals = (remove-larger typevals (lambda (a b) (subtypep a b)))
+          when %typevals
+          collect (cons typevar `(or ,@%typevals)))))
+
+(defun merge-mappings-as-and (mapping1 mapping2)
+  (let (plist)
+    (dolist (pair mapping1)
+      (pushnew (cdr pair) (getf plist (car pair)) :test #'equal))
+    (dolist (pair mapping2)
+      (pushnew (cdr pair) (getf plist (car pair)) :test #'equal))
+    (values (loop for (typevar typevals) on plist by #'cddr
+                  for %typevals = (remove-larger typevals (lambda (a b) (subtypep b a)))
+                  when %typevals
+                  if (subtypep `(and ,@typevals) nil) ;; (and ,@typevals) == nil
+                    do (return-from merge-mappings-as-and)
+                  else
+                    collect (cons typevar `(and ,@typevals)))
+            t)))
 
 (defun type-unify1-compound (typevars template type)
   (ematch type
